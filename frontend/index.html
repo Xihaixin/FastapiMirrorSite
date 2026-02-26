@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>学术资源检索 Demo</title>
+  <style>
+    body { font-family: sans-serif; max-width: 960px; margin: 20px auto; }
+    input, button { padding: 6px 10px; font-size: 14px; }
+    .resource { border-bottom: 1px solid #ddd; padding: 8px 0; cursor: pointer; }
+    .title { font-weight: bold; }
+    .meta { color: #666; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <h2>学术资源检索 Demo</h2>
+  <div>
+    <input id="q" type="text" placeholder="输入关键词（题名/摘要/关键词）" />
+    <button onclick="doSearch()">检索</button>
+  </div>
+
+  <div id="results"></div>
+
+  <script>
+    async function doSearch() {
+      const q = document.getElementById("q").value.trim();
+      const url = new URL("http://127.0.0.1:8000/api/resources/search");
+      if (q) {
+        url.searchParams.set("q", q);
+      }
+      url.searchParams.set("page", "1");
+      url.searchParams.set("size", "20");
+
+      const res = await fetch(url);
+      const data = await res.json();
+
+      const container = document.getElementById("results");
+      container.innerHTML = "";
+
+      if (!data.length) {
+        container.textContent = "没有检索到记录。";
+        return;
+      }
+
+      data.forEach((item) => {
+        const div = document.createElement("div");
+        div.className = "resource";
+        div.innerHTML = `
+          <div class="title">${item.title}</div>
+          <div class="meta">
+            作者：${item.authors || "未知"} |
+            年份：${item.year || "未知"} |
+            来源库：${item.source_db || "未知"} |
+            ID：${item.id}
+          </div>
+          <div>${item.abstract || ""}</div>
+        `;
+        div.onclick = () => loadDetail(item.id);
+        container.appendChild(div);
+      });
+    }
+
+    async function loadDetail(id) {
+      const res = await fetch(`http://127.0.0.1:8000/api/resources/${id}`);
+      if (!res.ok) {
+        alert("资源不存在或服务异常");
+        return;
+      }
+      const item = await res.json();
+      alert(
+        `题名：${item.title}\n` +
+        `作者：${item.authors || "未知"}\n` +
+        `年份：${item.year || "未知"}\n` +
+        `来源库：${item.source_db || "未知"}\n\n` +
+        `摘要：\n${item.abstract || ""}`
+      );
+    }
+  </script>
+</body>
+</html>
+
