@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>资源详情</title>
+  <style>
+    body { font-family: sans-serif; max-width: 960px; margin: 20px auto; }
+    a { color: #0b5bd3; }
+    .linklike { color: #0b5bd3; text-decoration: underline; cursor: pointer; }
+    .card { border: 1px solid #eee; border-radius: 8px; padding: 14px; }
+    .title { font-size: 18px; font-weight: 700; margin-bottom: 10px; }
+    .row { margin: 6px 0; }
+    .label { color: #666; display: inline-block; min-width: 90px; }
+    .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    pre { white-space: pre-wrap; word-break: break-word; margin: 6px 0 0; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div><a href="/static/index.html">← 返回检索</a></div>
+    <div id="status" style="color:#666;font-size:12px;"></div>
+  </div>
+
+  <div id="content" class="card"></div>
+
+  <script>
+    function getApiUrl(path) {
+      return new URL(path, window.location.origin).toString();
+    }
+
+    function splitMultiValue(s) {
+      if (!s) return [];
+      return String(s)
+        .split(/[;；,，、]\s*/g)
+        .map((x) => x.trim())
+        .filter(Boolean);
+    }
+
+    function gotoSearch(term) {
+      window.location.href = `/static/index.html?q=${encodeURIComponent(term)}`;
+    }
+
+    function renderClickableValues(values, onClick) {
+      const span = document.createElement("span");
+      const parts = splitMultiValue(values);
+      if (!parts.length) {
+        span.textContent = "未知";
+        return span;
+      }
+      parts.forEach((part, idx) => {
+        const a = document.createElement("a");
+        a.href = `/static/index.html?q=${encodeURIComponent(part)}`;
+        a.className = "linklike";
+        a.textContent = part;
+        a.onclick = (e) => {
+          e.preventDefault();
+          onClick(part);
+        };
+        span.appendChild(a);
+        if (idx !== parts.length - 1) span.appendChild(document.createTextNode("；"));
+      });
+      return span;
+    }
+
+    function addRow(container, label, valueNodeOrText) {
+      const row = document.createElement("div");
+      row.className = "row";
+      const lab = document.createElement("span");
+      lab.className = "label";
+      lab.textContent = label;
+      row.appendChild(lab);
+
+      if (valueNodeOrText instanceof Node) {
+        row.appendChild(valueNodeOrText);
+      } else {
+        const v = document.createElement("span");
+        v.textContent = valueNodeOrText || "未知";
+        row.appendChild(v);
+      }
+      container.appendChild(row);
+    }
+
+    async function loadDetail() {
+      const params = new URLSearchParams(window.location.search);
+      const id = (params.get("id") || "").trim();
+      const status = document.getElementById("status");
+      const content = document.getElementById("content");
+
+      if (!id) {
+        content.textContent = "缺少参数：id";
+        return;
+      }
+
+      status.textContent = `ID：${id}`;
+      const res = await fetch(getApiUrl(`/resources/${encodeURIComponent(id)}`));
+      if (!res.ok) {
+        content.textContent = "资源不存在或服务异常";
+        return;
+      }
+      const item = await res.json();
+
+      content.innerHTML = "";
+
+      const title = document.createElement("div");
+      title.className = "title";
+      // 详情页题名不需要跳转
+      title.textContent = item.title || "(无题名)";
+      content.appendChild(title);
+
+      addRow(content, "责任者", renderClickableValues(item.authors, gotoSearch));
+      addRow(content, "主题词", renderClickableValues(item.keywords, gotoSearch));
+      addRow(content, "出版日期", item.publish_date || item.publish_year || "");
+      addRow(content, "出版者", item.publisher || "");
+      addRow(content, "ISBN", item.isbn || "");
+      addRow(content, "语种", item.language || "");
+      addRow(content, "总页数", item.page_count != null ? String(item.page_count) : "");
+      addRow(content, "中图分类号", item.cnl_class_no || "");
+
+      const absRow = document.createElement("div");
+      absRow.className = "row";
+      const lab = document.createElement("span");
+      lab.className = "label";
+      lab.textContent = "摘要";
+      absRow.appendChild(lab);
+      const pre = document.createElement("pre");
+      pre.textContent = item.abstract || "";
+      absRow.appendChild(pre);
+      content.appendChild(absRow);
+    }
+
+    loadDetail();
+  </script>
+</body>
+</html>
+

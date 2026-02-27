@@ -4,34 +4,162 @@
   <meta charset="UTF-8" />
   <title>学术资源检索 Demo</title>
   <style>
-    body { font-family: sans-serif; max-width: 960px; margin: 20px auto; }
-    input, button { padding: 6px 10px; font-size: 14px; }
-    .resource { border-bottom: 1px solid #ddd; padding: 8px 0; cursor: pointer; }
-    .title { font-weight: bold; }
-    .meta { color: #666; font-size: 12px; }
+    body { font-family: Arial, "Microsoft YaHei", sans-serif; margin: 0; background: #fff; color: #222; }
+    .container { max-width: 960px; margin: 0 auto; padding: 0 16px; }
+
+    /* 顶部横幅（先用纯 CSS 模拟，后续可替换为图片） */
+    .hero {
+      height: 140px;
+      background: linear-gradient(180deg, #2b74c6 0%, #0b4a8e 100%);
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::after{
+      content:"";
+      position:absolute;
+      left:-40px; top:60px;
+      width:260px; height:260px;
+      background: rgba(255,255,255,0.18);
+      border-radius: 50%;
+      filter: blur(1px);
+    }
+    .hero-title {
+      position: absolute;
+      left: 0; right: 0; top: 38px;
+      text-align: center;
+      font-size: 40px;
+      letter-spacing: 4px;
+      color: rgba(10,10,10,0.85);
+      font-family: "STKaiti", "KaiTi", "Microsoft YaHei", serif;
+      text-shadow: 0 2px 0 rgba(255,255,255,0.25);
+      user-select: none;
+    }
+
+    input, button { padding: 7px 10px; font-size: 14px; }
+
+    /* 搜索区域：居中、长度适中（仿截图） */
+    .search-wrap { padding: 14px 0 6px; }
+    .search-bar { display: flex; justify-content: center; gap: 8px; align-items: center; }
+    #q { width: 420px; max-width: 70vw; }
+    button { min-width: 84px; background: #2b74c6; border: 1px solid #1f5ea6; color: #fff; cursor: pointer; }
+    button:hover { background: #2568b3; }
+
+    /* 结果栏（中间主栏） */
+    .summary { margin: 10px 0 8px; color: #444; font-size: 13px; border-top: 1px solid #e5e5e5; padding-top: 8px; }
+    .resource { border-top: 1px solid #e5e5e5; padding: 12px 0; }
+    .resource-row { display: flex; gap: 12px; }
+    .cover {
+      width: 72px; height: 96px;
+      border: 1px solid #d6d6d6;
+      background: linear-gradient(180deg, #fafafa 0%, #efefef 100%);
+      display: flex; align-items: center; justify-content: center;
+      color: #777; font-size: 12px;
+      flex: 0 0 auto;
+    }
+    .content { flex: 1 1 auto; min-width: 0; }
+    .title-line { font-size: 14px; margin-bottom: 6px; line-height: 1.4; }
+    .index-no { color: #777; margin-right: 4px; }
+    .title-link { color: #1f5ea6; text-decoration: none; font-weight: 700; }
+    .title-link:hover { text-decoration: underline; }
+    .meta { color: #333; font-size: 12px; line-height: 1.6; }
+    .label { color: #666; display: inline-block; min-width: 60px; }
+    .linklike { color: #1f5ea6; text-decoration: underline; cursor: pointer; }
+    .hl { background: #fff2a8; }
   </style>
 </head>
 <body>
-  <h2>学术资源检索 Demo</h2>
-  <div>
-    <input id="q" type="text" placeholder="输入关键词（题名/摘要/关键词）" />
-    <button onclick="doSearch()">检索</button>
+  <div class="hero">
+    <div class="hero-title">图书馆电子图书</div>
   </div>
 
-  <div id="results"></div>
+  <div class="container">
+    <div class="search-wrap">
+      <div class="search-bar">
+        <input id="q" type="text" placeholder="输入检索词（题名/责任者/主题词/摘要）" />
+        <button onclick="doSearch()">搜索</button>
+      </div>
+    </div>
+
+    <div id="summary" class="summary"></div>
+    <div id="results"></div>
+  </div>
 
   <script>
+    function getApiUrl(path) {
+      return new URL(path, window.location.origin).toString();
+    }
+
+    function splitMultiValue(s) {
+      if (!s) return [];
+      return String(s)
+        .split(/[;；,，、]\s*/g)
+        .map((x) => x.trim())
+        .filter(Boolean);
+    }
+
+    function gotoSearch(term) {
+      window.location.href = `/static/index.html?q=${encodeURIComponent(term)}`;
+    }
+
+    function renderClickableValues(container, values, onClick) {
+      const parts = splitMultiValue(values);
+      if (!parts.length) {
+        container.textContent = "未知";
+        return;
+      }
+      parts.forEach((part, idx) => {
+        const a = document.createElement("a");
+        a.href = `/static/index.html?q=${encodeURIComponent(part)}`;
+        a.className = "linklike";
+        a.textContent = part;
+        a.onclick = (e) => {
+          e.preventDefault();
+          onClick(part);
+        };
+        container.appendChild(a);
+        if (idx !== parts.length - 1) {
+          container.appendChild(document.createTextNode("；"));
+        }
+      });
+    }
+
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function highlight(text, term) {
+      if (!text) return "";
+      if (!term) return escapeHtml(text);
+      const t = String(term).trim();
+      if (!t) return escapeHtml(text);
+      const safeText = escapeHtml(String(text));
+      const safeTerm = escapeHtml(t);
+      // 简单高亮：不做复杂正则转义，避免误伤，优先用 split/join
+      return safeText.split(safeTerm).join(`<span class="hl">${safeTerm}</span>`);
+    }
+
     async function doSearch() {
       const q = document.getElementById("q").value.trim();
-      const url = new URL("http://127.0.0.1:8000/resources/search");
+      const url = new URL(getApiUrl("/resources/search"));
       if (q) {
         url.searchParams.set("q", q);
       }
       url.searchParams.set("page", "1");
       url.searchParams.set("size", "20");
 
+      const t0 = performance.now();
       const res = await fetch(url);
       const data = await res.json();
+      const t1 = performance.now();
+
+      const summary = document.getElementById("summary");
+      const seconds = ((t1 - t0) / 1000).toFixed(2);
+      summary.textContent = `在“学术电子图书库”中，命中：${data.length} 条，耗时：约 ${seconds} 秒`;
 
       const container = document.getElementById("results");
       container.innerHTML = "";
@@ -44,36 +172,93 @@
       data.forEach((item) => {
         const div = document.createElement("div");
         div.className = "resource";
-        div.innerHTML = `
-          <div class="title">${item.title}</div>
-          <div class="meta">
-            作者：${item.authors || "未知"} |
-            年份：${item.year || "未知"} |
-            来源库：${item.source_db || "未知"} |
-            ID：${item.id}
-          </div>
-          <div>${item.abstract || ""}</div>
-        `;
-        div.onclick = () => loadDetail(item.id);
+
+        const row = document.createElement("div");
+        row.className = "resource-row";
+
+        const cover = document.createElement("div");
+        cover.className = "cover";
+        cover.textContent = "封面";
+
+        const content = document.createElement("div");
+        content.className = "content";
+
+        // 题名（可点击进入详情）
+        const titleLine = document.createElement("div");
+        titleLine.className = "title-line";
+        const idxSpan = document.createElement("span");
+        idxSpan.className = "index-no";
+        idxSpan.textContent = `${String(container.childElementCount + 1)}.`;
+        titleLine.appendChild(idxSpan);
+
+        const titleLink = document.createElement("a");
+        titleLink.href = `/static/detail.html?id=${encodeURIComponent(item.id)}`;
+        titleLink.className = "title-link";
+        titleLink.innerHTML = highlight(item.title || "(无题名)", q);
+        titleLink.onclick = (e) => {
+          e.preventDefault();
+          window.location.href = `/static/detail.html?id=${encodeURIComponent(item.id)}`;
+        };
+        titleLine.appendChild(titleLink);
+
+        const meta = document.createElement("div");
+        meta.className = "meta";
+
+        const authorsRow = document.createElement("div");
+        const authorsLabel = document.createElement("span");
+        authorsLabel.className = "label";
+        authorsLabel.textContent = "责任者：";
+        const authorsVals = document.createElement("span");
+        renderClickableValues(authorsVals, item.authors, gotoSearch);
+        authorsRow.appendChild(authorsLabel);
+        authorsRow.appendChild(authorsVals);
+
+        const keywordsRow = document.createElement("div");
+        const keywordsLabel = document.createElement("span");
+        keywordsLabel.className = "label";
+        keywordsLabel.textContent = "主题词：";
+        const keywordsVals = document.createElement("span");
+        renderClickableValues(keywordsVals, item.keywords, gotoSearch);
+        keywordsRow.appendChild(keywordsLabel);
+        keywordsRow.appendChild(keywordsVals);
+
+        const publishRow = document.createElement("div");
+        const publishLabel = document.createElement("span");
+        publishLabel.className = "label";
+        publishLabel.textContent = "出版日期：";
+        const publishDisplay = item.publish_date || item.publish_year || "";
+        const publishVal = document.createElement("span");
+        publishVal.textContent = publishDisplay || "未知";
+        publishRow.appendChild(publishLabel);
+        publishRow.appendChild(publishVal);
+
+        meta.appendChild(authorsRow);
+        meta.appendChild(keywordsRow);
+        meta.appendChild(publishRow);
+
+        content.appendChild(titleLine);
+        content.appendChild(meta);
+
+        row.appendChild(cover);
+        row.appendChild(content);
+        div.appendChild(row);
+
         container.appendChild(div);
       });
     }
 
-    async function loadDetail(id) {
-      const res = await fetch(`http://127.0.0.1:8000/resources/${id}`);
-      if (!res.ok) {
-        alert("资源不存在或服务异常");
-        return;
+    function initFromQuery() {
+      const params = new URLSearchParams(window.location.search);
+      const q = (params.get("q") || "").trim();
+      if (q) {
+        document.getElementById("q").value = q;
+        doSearch();
+      } else {
+        document.getElementById("summary").textContent = "";
       }
-      const item = await res.json();
-      alert(
-        `题名：${item.title}\n` +
-        `作者：${item.authors || "未知"}\n` +
-        `年份：${item.year || "未知"}\n` +
-        `来源库：${item.source_db || "未知"}\n\n` +
-        `摘要：\n${item.abstract || ""}`
-      );
     }
+
+    initFromQuery();
   </script>
 </body>
 </html>
