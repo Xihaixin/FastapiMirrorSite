@@ -4,84 +4,101 @@
   <meta charset="UTF-8" />
   <title>学术资源检索 Demo</title>
   <style>
-    body { font-family: Arial, "Microsoft YaHei", sans-serif; margin: 0; background: #fff; color: #222; }
-    .container { max-width: 960px; margin: 0 auto; padding: 0 16px; }
+    html, body { overflow-x: hidden; }
+    body { font-family: "PingFang SC","Microsoft YaHei",Arial,sans-serif; margin: 0; background: #f2f2f2; color: #222; font-size: 13px; line-height: 1.42857143; }
+    a, a:hover { text-decoration: none; color: #666; }
 
-    /* 顶部横幅（先用纯 CSS 模拟，后续可替换为图片） */
-    .hero {
-      height: 140px;
-      background: linear-gradient(180deg, #2b74c6 0%, #0b4a8e 100%);
-      position: relative;
-      overflow: hidden;
-    }
-    .hero::after{
-      content:"";
-      position:absolute;
-      left:-40px; top:60px;
-      width:260px; height:260px;
-      background: rgba(255,255,255,0.18);
-      border-radius: 50%;
-      filter: blur(1px);
-    }
-    .hero-title {
-      position: absolute;
-      left: 0; right: 0; top: 38px;
-      text-align: center;
-      font-size: 40px;
-      letter-spacing: 4px;
-      color: rgba(10,10,10,0.85);
-      font-family: "STKaiti", "KaiTi", "Microsoft YaHei", serif;
-      text-shadow: 0 2px 0 rgba(255,255,255,0.25);
-      user-select: none;
+    /* 页面宽度：仿原站居中布局（先不做左右栏，但保留整体宽度感） */
+    .page { width: 1000px; max-width: calc(100vw - 24px); margin: 0 auto; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+
+    /* 顶部横幅：置于页面容器内，而非全宽铺满 */
+    .header{
+      background: url(/static/top-new.jpg) no-repeat center center;
+      height: 212px;
+      background-size: cover;
+      border-bottom: 1px solid #dcdcdc;
     }
 
-    input, button { padding: 7px 10px; font-size: 14px; }
+    /* 搜索条：位于横幅下方、居中 */
+    .search-area { padding: 10px 0 12px; background: #fff; }
+    .search_con { width: 580px; max-width: calc(100% - 24px); margin: 0 auto; }
+    .search_h30 { background:#fff; color:#666; width:100%; height: 45px; line-height: 45px; position: relative; border: 1px solid #dcdcdc; }
+    .textbox_con { width: calc(100% - 70px); float:left; position: relative; }
+    .textbox { width:100%; border:none; font-size:16px; padding:0 10px; outline:none; height:45px; line-height:45px; box-sizing: border-box; }
+    .search_btn { position: absolute; right: 0; top:0; width:70px; height:45px; }
+    .search_btn button {
+      width: 70px;
+      height: 45px;
+      border: none;
+      background: #152a8c;
+      color: #fff;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .search_btn button:hover { background-color:#1f39ae; }
 
-    /* 搜索区域：居中、长度适中（仿截图） */
-    .search-wrap { padding: 14px 0 6px; }
-    .search-bar { display: flex; justify-content: center; gap: 8px; align-items: center; }
-    #q { width: 420px; max-width: 70vw; }
-    button { min-width: 84px; background: #2b74c6; border: 1px solid #1f5ea6; color: #fff; cursor: pointer; }
-    button:hover { background: #2568b3; }
+    /* 中间主栏：仿原站“中间栏宽度” */
+    .content-wrap { width: 720px; max-width: calc(100% - 24px); margin: 0 auto 24px; }
+    .content-box { border: 1px solid #dcdcdc; background: #fff; }
+    .summary {
+      padding: 8px 10px;
+      color: #444;
+      font-size: 12px;
+      border-bottom: 1px solid #e5e5e5;
+      background: #fafafa;
+    }
 
-    /* 结果栏（中间主栏） */
-    .summary { margin: 10px 0 8px; color: #444; font-size: 13px; border-top: 1px solid #e5e5e5; padding-top: 8px; }
-    .resource { border-top: 1px solid #e5e5e5; padding: 12px 0; }
-    .resource-row { display: flex; gap: 12px; }
-    .cover {
-      width: 72px; height: 96px;
+    .resource { border-bottom: 1px solid #eaeaea; padding: 12px 10px; }
+    .resource:hover { background: #f6fbff; }
+    .resource-row { display: flex; gap: 14px; }
+    .cover-img {
+      width: 92px;
+      height: 124px;
+      object-fit: cover;
       border: 1px solid #d6d6d6;
-      background: linear-gradient(180deg, #fafafa 0%, #efefef 100%);
-      display: flex; align-items: center; justify-content: center;
-      color: #777; font-size: 12px;
+      background: #fafafa;
       flex: 0 0 auto;
     }
+    .resource:hover .cover-img { box-shadow: 0 3px 10px rgba(0,0,0,0.22); transition: box-shadow .2s ease-in-out; }
     .content { flex: 1 1 auto; min-width: 0; }
-    .title-line { font-size: 14px; margin-bottom: 6px; line-height: 1.4; }
+    .title-line { font-size: 14px; margin-bottom: 8px; line-height: 1.4; }
     .index-no { color: #777; margin-right: 4px; }
-    .title-link { color: #1f5ea6; text-decoration: none; font-weight: 700; }
+    .title-link { color: #1f5ea6; font-weight: 700; }
     .title-link:hover { text-decoration: underline; }
-    .meta { color: #333; font-size: 12px; line-height: 1.6; }
-    .label { color: #666; display: inline-block; min-width: 60px; }
+    .meta { color: #333; font-size: 12px; line-height: 1.7; }
+    .label { color: #666; display: inline-block; min-width: 62px; }
     .linklike { color: #1f5ea6; text-decoration: underline; cursor: pointer; }
-    .hl { background: #fff2a8; }
+    .hl { color: #d40000; font-weight: 700; }
+
+    @media (max-width: 767px) {
+      .header{ height: 170px; }
+      .content-wrap { width: calc(100% - 24px); }
+    }
   </style>
 </head>
 <body>
-  <div class="hero">
-    <div class="hero-title">图书馆电子图书</div>
-  </div>
+  <div class="page">
+    <div class="header"></div>
 
-  <div class="container">
-    <div class="search-wrap">
-      <div class="search-bar">
-        <input id="q" type="text" placeholder="输入检索词（题名/责任者/主题词/摘要）" />
-        <button onclick="doSearch()">搜索</button>
+    <div class="search-area">
+      <div class="search_con">
+        <div class="search_h30">
+          <div class="textbox_con">
+            <input id="q" class="textbox" type="text" placeholder="请输入检索词" />
+          </div>
+          <div class="search_btn">
+            <button id="searchBtn" type="button" onclick="doSearch()">搜索</button>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div id="summary" class="summary"></div>
-    <div id="results"></div>
+    <div class="content-wrap">
+      <div class="content-box">
+        <div id="summary" class="summary"></div>
+        <div id="results"></div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -132,15 +149,18 @@
         .replace(/'/g, "&#039;");
     }
 
+    function escapeRegExp(s) {
+      return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    }
+
     function highlight(text, term) {
       if (!text) return "";
       if (!term) return escapeHtml(text);
       const t = String(term).trim();
       if (!t) return escapeHtml(text);
       const safeText = escapeHtml(String(text));
-      const safeTerm = escapeHtml(t);
-      // 简单高亮：不做复杂正则转义，避免误伤，优先用 split/join
-      return safeText.split(safeTerm).join(`<span class="hl">${safeTerm}</span>`);
+      const re = new RegExp(escapeRegExp(t), "gi");
+      return safeText.replace(re, (m) => `<span class="hl">${m}</span>`);
     }
 
     async function doSearch() {
@@ -158,8 +178,9 @@
       const t1 = performance.now();
 
       const summary = document.getElementById("summary");
-      const seconds = ((t1 - t0) / 1000).toFixed(2);
-      summary.textContent = `在“学术电子图书库”中，命中：${data.length} 条，耗时：约 ${seconds} 秒`;
+      const elapsedMs = t1 - t0;
+      const timeText = elapsedMs < 10 ? "小于0.01秒" : `${(elapsedMs / 1000).toFixed(2)}秒`;
+      summary.textContent = `在“外文电子图书库文山学院”中，当前命中：${data.length} 条信息，搜索耗时：${timeText}`;
 
       const container = document.getElementById("results");
       container.innerHTML = "";
@@ -176,9 +197,15 @@
         const row = document.createElement("div");
         row.className = "resource-row";
 
-        const cover = document.createElement("div");
-        cover.className = "cover";
-        cover.textContent = "封面";
+        const cover = document.createElement("img");
+        cover.className = "cover-img";
+        cover.alt = "封面";
+        // 参考站点资源：这里先用一张示例封面占位（后续可接入真实封面字段）
+        cover.src = "/mirror/index/2.jpg";
+        cover.onerror = () => {
+          cover.removeAttribute("src");
+          cover.style.background = "#fafafa";
+        };
 
         const content = document.createElement("div");
         content.className = "content";
@@ -192,12 +219,15 @@
         titleLine.appendChild(idxSpan);
 
         const titleLink = document.createElement("a");
-        titleLink.href = `/static/detail.html?id=${encodeURIComponent(item.id)}`;
+        const detailUrl = q
+          ? `/static/detail.html?id=${encodeURIComponent(item.id)}&q=${encodeURIComponent(q)}`
+          : `/static/detail.html?id=${encodeURIComponent(item.id)}`;
+        titleLink.href = detailUrl;
         titleLink.className = "title-link";
         titleLink.innerHTML = highlight(item.title || "(无题名)", q);
         titleLink.onclick = (e) => {
           e.preventDefault();
-          window.location.href = `/static/detail.html?id=${encodeURIComponent(item.id)}`;
+          window.location.href = detailUrl;
         };
         titleLine.appendChild(titleLink);
 
@@ -257,6 +287,10 @@
         document.getElementById("summary").textContent = "";
       }
     }
+
+    document.getElementById("q").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") doSearch();
+    });
 
     initFromQuery();
   </script>

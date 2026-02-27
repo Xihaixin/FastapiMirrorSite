@@ -42,6 +42,13 @@ app.mount(
     name="frontend",
 )
 
+# 兼容迁移：临时挂载 first_batch_mirror 的静态资源，便于复用页面素材（图片/CSS 等）
+app.mount(
+    "/mirror",
+    StaticFiles(directory="first_batch_mirror/WebFile"),
+    name="mirror",
+)
+
 
 @app.get("/", include_in_schema=False)
 def read_index():
