@@ -48,7 +48,7 @@ def read_index():
     return FileResponse("frontend/index.html")
 
 
-@app.get("/api/resources/search", response_model=List[schemas.ResourceOut])
+@app.get("/resources/search", response_model=List[schemas.ResourceOut])
 def search_resources(
     q: Optional[str] = Query(
         None, description="Keyword to search in title/abstract/keywords"
@@ -62,7 +62,7 @@ def search_resources(
     return resources
 
 
-@app.get("/api/resources/{resource_id}", response_model=schemas.ResourceOut)
+@app.get("/resources/{resource_id}", response_model=schemas.ResourceOut)
 def read_resource(resource_id: int, db: Session = Depends(get_db)):
     resource = crud.get_resource(db, resource_id=resource_id)
     if not resource:

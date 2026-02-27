@@ -23,7 +23,7 @@
   <script>
     async function doSearch() {
       const q = document.getElementById("q").value.trim();
-      const url = new URL("http://127.0.0.1:8000/api/resources/search");
+      const url = new URL("http://127.0.0.1:8000/resources/search");
       if (q) {
         url.searchParams.set("q", q);
       }
@@ -60,7 +60,7 @@
     }
 
     async function loadDetail(id) {
-      const res = await fetch(`http://127.0.0.1:8000/api/resources/${id}`);
+      const res = await fetch(`http://127.0.0.1:8000/resources/${id}`);
       if (!res.ok) {
         alert("资源不存在或服务异常");
         return;
