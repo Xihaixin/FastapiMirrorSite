@@ -1,14 +1,70 @@
+import os
+import ipaddress
 from typing import List, Optional
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from . import crud, models, schemas
 from .database import Base, engine, get_db
+
+
+def _build_allowlist():
+    """
+    IP_ALLOWLIST 支持格式（逗号分隔）：
+    - 单个 IP：192.168.10.31
+    - 网段 CIDR：192.168.10.0/24
+    留空表示不启用白名单（放行所有）。
+    """
+    raw = (os.getenv("IP_ALLOWLIST") or "").strip()
+    if not raw:
+        return []
+
+    items = []
+    for token in raw.split(","):
+        t = token.strip()
+        if not t:
+            continue
+        try:
+            if "/" in t:
+                items.append(ipaddress.ip_network(t, strict=False))
+            else:
+                items.append(ipaddress.ip_address(t))
+        except ValueError:
+            # 忽略非法配置项，避免启动失败
+            continue
+    return items
+
+
+_ALLOWLIST = _build_allowlist()
+
+
+def _ip_allowed(ip: str) -> bool:
+    # 始终允许本机访问
+    if ip in {"127.0.0.1", "::1"}:
+        return True
+    # 未配置白名单：不启用限制
+    if not _ALLOWLIST:
+        return True
+
+    try:
+        ip_obj = ipaddress.ip_address(ip)
+    except ValueError:
+        return False
+
+    for item in _ALLOWLIST:
+        if isinstance(item, (ipaddress.IPv4Network, ipaddress.IPv6Network)):
+            if ip_obj in item:
+                return True
+        else:
+            if ip_obj == item:
+                return True
+    return False
 
 
 @asynccontextmanager
@@ -27,6 +83,17 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+
+@app.middleware("http")
+async def ip_allowlist_middleware(request: Request, call_next):
+    client_ip = request.client.host if request.client else ""
+    if not _ip_allowed(client_ip):
+        return JSONResponse(
+            status_code=403,
+            content={"detail": "IP not allowed", "client_ip": client_ip},
+        )
+    return await call_next(request)
 
 app.add_middleware(
     CORSMiddleware,
