@@ -10,7 +10,7 @@ from fastapi.responses import FileResponse
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
-from . import crud, models, schemas
+from . import crud, models, schemas, seed_data
 from .database import Base, engine, get_db
 
 
@@ -72,7 +72,8 @@ async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     db = next(get_db())
     try:
-        crud.create_sample_data(db)
+        target_count = int(os.getenv("SEED_TARGET_COUNT", "500"))
+        seed_data.seed_resources(db, target_count=target_count)
         yield
     finally:
         db.close()

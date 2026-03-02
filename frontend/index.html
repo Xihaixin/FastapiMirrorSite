@@ -59,6 +59,31 @@
     .linklike { color: #1f5ea6; text-decoration: underline; cursor: pointer; }
     .hl { color: #d40000; font-weight: 700; }
 
+    .right-panel-body { display: grid; grid-template-columns: 28px 1fr; min-height: 760px; }
+    .right-pager {
+      border-right: 1px solid #e7e7e7;
+      padding: 6px 2px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      background: #fcfcfc;
+    }
+    .pager-btn {
+      width: 22px;
+      height: 22px;
+      line-height: 20px;
+      text-align: center;
+      border: 1px solid #cfdcec;
+      background: #f4f9ff;
+      color: #1f5ea6;
+      font-size: 12px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .pager-btn:hover { background: #e9f3ff; }
+    .pager-btn.active { border-color: #7aa4d6; background: #d9eaff; color: #0f4b92; font-weight: 700; }
+    .pager-btn.disabled { color: #9a9a9a; background: #f7f7f7; border-color: #e1e1e1; cursor: default; }
     .right-box { padding: 8px 10px; max-height: 760px; overflow: auto; }
     .agg-block { margin-bottom: 12px; }
     .agg-title { font-weight: 700; color: #223f66; margin-bottom: 6px; }
@@ -76,6 +101,8 @@
       .home-list { columns: 1; }
       .search-wrap { grid-template-columns: 1fr; }
       .right-panel { grid-column: auto; }
+      .right-panel-body { grid-template-columns: 1fr; min-height: auto; }
+      .right-pager { flex-direction: row; flex-wrap: wrap; justify-content: center; border-right: 0; border-bottom: 1px solid #e7e7e7; }
       .facet-body, .right-box { max-height: 280px; }
     }
   </style>
@@ -114,7 +141,10 @@
 
       <div class="panel right-panel">
         <div class="panel-title">聚合结果</div>
-        <div id="rightAgg" class="right-box"></div>
+        <div class="right-panel-body">
+          <div id="rightPager" class="right-pager"></div>
+          <div id="rightAgg" class="right-box"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -124,6 +154,8 @@
     let currentSearchPoint = "";
     let currentPublishYear = "";
     let currentLanguage = "";
+    let currentPage = 1;
+    let currentSize = 20;
     const facetExpandState = {};
 
     function getApiUrl(path) {
@@ -180,14 +212,61 @@
       return safeText.replace(re, (m) => `<span class="hl">${m}</span>`);
     }
 
-    function syncUrl(q) {
+    function syncUrl(q, page) {
       const url = new URL(window.location.href);
       if (q) url.searchParams.set("q", q); else url.searchParams.delete("q");
       if (currentClassCode) url.searchParams.set("class_code", currentClassCode); else url.searchParams.delete("class_code");
       if (currentSearchPoint) url.searchParams.set("search_point", currentSearchPoint); else url.searchParams.delete("search_point");
       if (currentPublishYear) url.searchParams.set("publish_year", currentPublishYear); else url.searchParams.delete("publish_year");
       if (currentLanguage) url.searchParams.set("language", currentLanguage); else url.searchParams.delete("language");
+      if (page && page > 1) url.searchParams.set("page", String(page)); else url.searchParams.delete("page");
       history.replaceState(null, "", url.toString());
+    }
+
+    function buildPageWindow(page, totalPages, maxLen = 9) {
+      if (totalPages <= maxLen) {
+        return Array.from({ length: totalPages }, (_, i) => i + 1);
+      }
+      const half = Math.floor(maxLen / 2);
+      let start = page - half;
+      let end = page + half;
+      if (start < 1) {
+        start = 1;
+        end = maxLen;
+      }
+      if (end > totalPages) {
+        end = totalPages;
+        start = totalPages - maxLen + 1;
+      }
+      const arr = [];
+      for (let i = start; i <= end; i += 1) arr.push(i);
+      return arr;
+    }
+
+    function renderRightPager(total, page, size) {
+      const pager = document.getElementById("rightPager");
+      pager.innerHTML = "";
+      const totalPages = Math.max(1, Math.ceil((total || 0) / (size || 20)));
+
+      const addBtn = (label, targetPage, disabled, isActive = false) => {
+        const btn = document.createElement("div");
+        btn.className = "pager-btn";
+        if (isActive) btn.classList.add("active");
+        if (disabled) btn.classList.add("disabled");
+        btn.textContent = label;
+        if (!disabled) {
+          btn.onclick = () => doSearch(targetPage, true);
+        }
+        pager.appendChild(btn);
+      };
+
+      addBtn("↑", 1, page <= 1);
+      addBtn("▲", page - 1, page <= 1);
+      buildPageWindow(page, totalPages, 9).forEach((p) => {
+        addBtn(String(p), p, false, p === page);
+      });
+      addBtn("▼", page + 1, page >= totalPages);
+      addBtn("↓", totalPages, page >= totalPages);
     }
 
     function setModeSearch() {
@@ -360,7 +439,8 @@
     async function doSearch(page = 1, keepTreeState = false) {
       const q = document.getElementById("q").value.trim();
       if (!q && !currentClassCode && !currentSearchPoint && !currentPublishYear && !currentLanguage) {
-        syncUrl("");
+        currentPage = 1;
+        syncUrl("", 1);
         await loadHomeResources();
         return;
       }
@@ -380,6 +460,8 @@
       const payload = await res.json();
       const items = payload.items || [];
       const total = typeof payload.total === "number" ? payload.total : items.length;
+      currentPage = payload.page || page || 1;
+      currentSize = payload.size || 20;
       const facets = payload.facets || {};
       const cnlFacets = facets.cnl || [];
       const t1 = performance.now();
@@ -391,6 +473,7 @@
       }
       buildFacetTree(cnlFacets);
       buildRightAggregations(total, facets);
+      renderRightPager(total, currentPage, currentSize);
 
       const facetTotal = cnlFacets.reduce((acc, n) => acc + (n.count || 0), 0);
       document.getElementById("facetHeader").textContent = `中图分类法(${facetTotal})`;
@@ -404,7 +487,7 @@
       if (currentLanguage) filterText += `<span class="filter-tip">语种：${escapeHtml(currentLanguage)}</span>`;
       document.getElementById("summary").innerHTML = `在“外文电子图书库文山学院”中，命中：${total} 条，耗时：${timeText}` + filterText;
 
-      syncUrl(q);
+      syncUrl(q, currentPage);
 
       const container = document.getElementById("results");
       container.innerHTML = "";
@@ -505,6 +588,7 @@
       const searchPoint = (params.get("search_point") || "").trim();
       const publishYear = (params.get("publish_year") || "").trim();
       const language = (params.get("language") || "").trim();
+      const page = Number(params.get("page") || "1");
 
       if (q) document.getElementById("q").value = q;
       if (classCode) currentClassCode = classCode;
@@ -512,7 +596,8 @@
       if (publishYear) currentPublishYear = publishYear;
       if (language) currentLanguage = language;
 
-      if (q || classCode || searchPoint || publishYear || language) doSearch(1);
+      const startPage = Number.isFinite(page) && page >= 1 ? page : 1;
+      if (q || classCode || searchPoint || publishYear || language) doSearch(startPage);
       else loadHomeResources();
     }
 
