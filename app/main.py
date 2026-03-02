@@ -122,18 +122,49 @@ def read_index():
     return FileResponse("frontend/index.html")
 
 
-@app.get("/resources/search", response_model=List[schemas.ResourceOut])
+@app.get("/resources/search", response_model=schemas.ResourceSearchOut)
 def search_resources(
     q: Optional[str] = Query(
         None, description="Keyword to search in title/abstract/keywords"
+    ),
+    class_code: Optional[str] = Query(
+        None, description="CNL class code prefix filter (e.g. TP, TP181)"
+    ),
+    search_point: Optional[str] = Query(
+        None, description="Search hit field filter: title/authors/abstract"
+    ),
+    publish_year: Optional[int] = Query(
+        None, description="Publish year facet filter"
+    ),
+    language: Optional[str] = Query(
+        None, description="Language facet filter, e.g. en/zh-CN"
     ),
     page: int = Query(1, ge=1),
     size: int = Query(10, ge=1, le=100),
     db: Session = Depends(get_db),
 ):
     skip = (page - 1) * size
-    resources = crud.search_resources(db, q=q, skip=skip, limit=size)
-    return resources
+    result = crud.search_resources(
+        db,
+        q=q,
+        skip=skip,
+        limit=size,
+        class_code=class_code,
+        search_point=search_point,
+        publish_year=publish_year,
+        language=language,
+    )
+    result["page"] = page
+    result["size"] = size
+    return result
+
+
+@app.get("/resources/home", response_model=List[schemas.ResourceOut])
+def list_home_resources(
+    size: int = Query(16, ge=1, le=60),
+    db: Session = Depends(get_db),
+):
+    return crud.list_home_resources(db, limit=size)
 
 
 @app.get("/resources/{resource_id}", response_model=schemas.ResourceOut)

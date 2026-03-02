@@ -1,7 +1,7 @@
 from datetime import date
-from typing import Optional
+from typing import List, Optional
 
-from pydantic import BaseModel, Field, conint
+from pydantic import BaseModel, ConfigDict, Field, conint
 
 
 class ResourceBase(BaseModel):
@@ -36,6 +36,36 @@ class ResourceCreate(ResourceBase):
 class ResourceOut(ResourceBase):
     id: int
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
+
+
+class CnlFacetNode(BaseModel):
+    code: str
+    name: str
+    count: int
+    children: List["CnlFacetNode"] = Field(default_factory=list)
+
+
+class SearchFacets(BaseModel):
+    cnl: List[CnlFacetNode] = Field(default_factory=list)
+    search_points: List["FacetBucket"] = Field(default_factory=list)
+    publish_years: List["FacetBucket"] = Field(default_factory=list)
+    languages: List["FacetBucket"] = Field(default_factory=list)
+
+
+class FacetBucket(BaseModel):
+    key: str
+    count: int
+
+
+class ResourceSearchOut(BaseModel):
+    items: List[ResourceOut]
+    total: int
+    page: int
+    size: int
+    facets: SearchFacets
+
+
+CnlFacetNode.update_forward_refs()
+SearchFacets.update_forward_refs()
 

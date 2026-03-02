@@ -1,4 +1,14 @@
-from sqlalchemy import CheckConstraint, Column, Date, Integer, String, Text
+from sqlalchemy import (
+    CheckConstraint,
+    Column,
+    Date,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
+from sqlalchemy.orm import relationship
 
 from .database import Base
 
@@ -36,4 +46,44 @@ class Resource(Base):
             name="ck_resources_page_count_positive",
         ),
     )
+
+    class_mappings = relationship(
+        "ResourceClassMap",
+        back_populates="resource",
+        cascade="all, delete-orphan",
+    )
+
+
+class CnlClass(Base):
+    __tablename__ = "cnl_classes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    code = Column(String(64), nullable=False, unique=True, index=True)
+    name = Column(String(128), nullable=False)
+    parent_id = Column(Integer, ForeignKey("cnl_classes.id"), nullable=True, index=True)
+    level = Column(Integer, nullable=False, default=1)
+    path = Column(String(256), nullable=True)
+
+    parent = relationship("CnlClass", remote_side=[id], backref="children")
+    resource_mappings = relationship(
+        "ResourceClassMap",
+        back_populates="cnl_class",
+        cascade="all, delete-orphan",
+    )
+
+
+class ResourceClassMap(Base):
+    __tablename__ = "resource_class_map"
+
+    id = Column(Integer, primary_key=True, index=True)
+    resource_id = Column(Integer, ForeignKey("resources.id"), nullable=False, index=True)
+    class_id = Column(Integer, ForeignKey("cnl_classes.id"), nullable=False, index=True)
+    is_primary = Column(Integer, nullable=False, default=1)
+
+    __table_args__ = (
+        UniqueConstraint("resource_id", "class_id", name="uq_resource_class_map_unique"),
+    )
+
+    resource = relationship("Resource", back_populates="class_mappings")
+    cnl_class = relationship("CnlClass", back_populates="resource_mappings")
 
