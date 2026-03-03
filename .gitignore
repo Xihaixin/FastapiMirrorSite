@@ -10,3 +10,4 @@ wheels/
 .venv
 db/
 first_batch_mirror/
+.env

@@ -96,6 +96,7 @@ async def ip_allowlist_middleware(request: Request, call_next):
         )
     return await call_next(request)
 
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
