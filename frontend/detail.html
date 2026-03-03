@@ -4,24 +4,102 @@
   <meta charset="UTF-8" />
   <title>资源详情</title>
   <style>
-    body { font-family: sans-serif; max-width: 960px; margin: 20px auto; }
-    a { color: #0b5bd3; }
-    .linklike { color: #0b5bd3; text-decoration: underline; cursor: pointer; }
-    .card { border: 1px solid #eee; border-radius: 8px; padding: 14px; }
-    .title { font-size: 18px; font-weight: 700; margin-bottom: 10px; }
-    .row { margin: 6px 0; }
-    .label { color: #666; display: inline-block; min-width: 90px; }
-    .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-    pre { white-space: pre-wrap; word-break: break-word; margin: 6px 0 0; }
+    html, body { overflow-x: hidden; }
+    body { font-family: "PingFang SC","Microsoft YaHei",Arial,sans-serif; margin: 0; background: #f2f2f2; color: #222; font-size: 13px; line-height: 1.42857143; }
+    a, a:hover { text-decoration: none; color: #666; }
+
+    .page { width: 1000px; max-width: calc(100vw - 24px); margin: 0 auto; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+    .header{
+      background: url(/static/top-new.jpg) no-repeat center center;
+      height: 212px;
+      background-size: cover;
+      border-bottom: 1px solid #dcdcdc;
+    }
+
+    /* 搜索条：与列表页一致，放在横幅下方 */
+    .search-area { padding: 10px 0 12px; background: #fff; }
+    .search_con { width: 580px; max-width: calc(100% - 24px); margin: 0 auto; }
+    .search_h30 { background:#fff; color:#666; width:100%; height: 45px; line-height: 45px; position: relative; border: 1px solid #dcdcdc; }
+    .textbox_con { width: calc(100% - 70px); float:left; position: relative; }
+    .textbox { width:100%; border:none; font-size:16px; padding:0 10px; outline:none; height:45px; line-height:45px; box-sizing: border-box; }
+    .search_btn { position: absolute; right: 0; top:0; width:70px; height:45px; }
+    .search_btn button {
+      width: 70px;
+      height: 45px;
+      border: none;
+      background: #152a8c;
+      color: #fff;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .search_btn button:hover { background-color:#1f39ae; }
+
+    .main { width: 720px; max-width: calc(100% - 24px); margin: 0 auto; padding: 10px 0 24px; }
+    .crumb { font-size: 12px; color: #666; padding: 8px 10px; border-bottom: 1px solid #e5e5e5; background: #fafafa; }
+    .crumb a { color: #1f5ea6; }
+    .crumb a:hover { text-decoration: underline; }
+    .status { float: right; color:#777; }
+    .linklike { color: #1f5ea6; text-decoration: underline; cursor: pointer; }
+
+    .card { border: 1px solid #dcdcdc; background: #fff; }
+    .title-main { font-size: 15px; font-weight: 700; text-align: center; padding: 10px 10px 6px; color: #222; }
+
+    /* 信息区：仿原站浅蓝底块 */
+    .info-panel {
+      background: #eef6ff;
+      border-top: 1px solid #d6e6fb;
+      border-bottom: 1px solid #d6e6fb;
+      padding: 12px 12px;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+    .cover-img {
+      width: 110px;
+      height: 150px;
+      object-fit: cover;
+      border: 1px solid #d6d6d6;
+      background: #fafafa;
+      flex: 0 0 auto;
+    }
+    .fields { flex: 1 1 auto; min-width: 0; font-size: 12px; color: #333; line-height: 1.7; }
+    .row { margin: 3px 0; }
+    .label { color: #666; display: inline-block; min-width: 70px; }
+
+    .abstract { padding: 10px 12px 14px; }
+    .abstract-title { font-weight: 700; color: #222; margin-bottom: 6px; }
+    .abstract-body { font-size: 12px; color: #333; line-height: 1.75; white-space: pre-wrap; word-break: break-word; }
+
+    .hl { color: #d40000; font-weight: 700; }
+
+    @media (max-width: 767px) {
+      .header{ height: 170px; }
+      .info-panel { flex-direction: column; }
+      .cover-img { width: 98px; height: 134px; }
+    }
   </style>
 </head>
 <body>
-  <div class="topbar">
-    <div><a href="/static/index.html">← 返回检索</a></div>
-    <div id="status" style="color:#666;font-size:12px;"></div>
-  </div>
+  <div class="page">
+    <div class="header"></div>
 
-  <div id="content" class="card"></div>
+    <div class="search-area">
+      <div class="search_con">
+        <div class="search_h30">
+          <div class="textbox_con">
+            <input id="q" class="textbox" type="text" placeholder="请输入检索词" />
+          </div>
+          <div class="search_btn">
+            <button id="searchBtn" type="button" onclick="doSearch()">搜索</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="main">
+      <div id="content" class="card"></div>
+    </div>
+  </div>
 
   <script>
     function getApiUrl(path) {
@@ -38,6 +116,12 @@
 
     function gotoSearch(term) {
       window.location.href = `/static/index.html?q=${encodeURIComponent(term)}`;
+    }
+
+    function doSearch() {
+      const q = document.getElementById("q").value.trim();
+      if (!q) return;
+      gotoSearch(q);
     }
 
     function renderClickableValues(values, onClick) {
@@ -62,6 +146,29 @@
       return span;
     }
 
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function escapeRegExp(s) {
+      return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    }
+
+    function highlight(text, term) {
+      if (!text) return "";
+      if (!term) return escapeHtml(text);
+      const t = String(term).trim();
+      if (!t) return escapeHtml(text);
+      const safeText = escapeHtml(String(text));
+      const re = new RegExp(escapeRegExp(t), "gi");
+      return safeText.replace(re, (m) => `<span class="hl">${m}</span>`);
+    }
+
     function addRow(container, label, valueNodeOrText) {
       const row = document.createElement("div");
       row.className = "row";
@@ -83,7 +190,7 @@
     async function loadDetail() {
       const params = new URLSearchParams(window.location.search);
       const id = (params.get("id") || "").trim();
-      const status = document.getElementById("status");
+      const q = (params.get("q") || "").trim();
       const content = document.getElementById("content");
 
       if (!id) {
@@ -91,7 +198,8 @@
         return;
       }
 
-      status.textContent = `ID：${id}`;
+      if (q) document.getElementById("q").value = q;
+
       const res = await fetch(getApiUrl(`/resources/${encodeURIComponent(id)}`));
       if (!res.ok) {
         content.textContent = "资源不存在或服务异常";
@@ -101,32 +209,70 @@
 
       content.innerHTML = "";
 
-      const title = document.createElement("div");
-      title.className = "title";
-      // 详情页题名不需要跳转
-      title.textContent = item.title || "(无题名)";
-      content.appendChild(title);
+      const crumb = document.createElement("div");
+      crumb.className = "crumb";
+      const back = document.createElement("a");
+      back.id = "backLink";
+      back.href = q ? `/static/index.html?q=${encodeURIComponent(q)}` : "/static/index.html";
+      back.textContent = "返回检索";
+      crumb.appendChild(back);
+      crumb.appendChild(document.createTextNode("  >  详情"));
+      const status = document.createElement("span");
+      status.className = "status";
+      status.textContent = `ID：${id}`;
+      crumb.appendChild(status);
+      content.appendChild(crumb);
 
-      addRow(content, "责任者", renderClickableValues(item.authors, gotoSearch));
-      addRow(content, "主题词", renderClickableValues(item.keywords, gotoSearch));
-      addRow(content, "出版日期", item.publish_date || item.publish_year || "");
-      addRow(content, "出版者", item.publisher || "");
-      addRow(content, "ISBN", item.isbn || "");
-      addRow(content, "语种", item.language || "");
-      addRow(content, "总页数", item.page_count != null ? String(item.page_count) : "");
-      addRow(content, "中图分类号", item.cnl_class_no || "");
+      const titleMain = document.createElement("div");
+      titleMain.className = "title-main";
+      // 详情页题名不需要跳转（但可以按检索词高亮）
+      titleMain.innerHTML = highlight(item.title || "(无题名)", q);
+      content.appendChild(titleMain);
 
-      const absRow = document.createElement("div");
-      absRow.className = "row";
-      const lab = document.createElement("span");
-      lab.className = "label";
-      lab.textContent = "摘要";
-      absRow.appendChild(lab);
-      const pre = document.createElement("pre");
-      pre.textContent = item.abstract || "";
-      absRow.appendChild(pre);
-      content.appendChild(absRow);
+      const info = document.createElement("div");
+      info.className = "info-panel";
+
+      const cover = document.createElement("img");
+      cover.className = "cover-img";
+      cover.alt = "封面";
+      cover.src = "/mirror/index/2.jpg";
+      cover.onerror = () => {
+        cover.removeAttribute("src");
+        cover.style.background = "#fafafa";
+      };
+
+      const fields = document.createElement("div");
+      fields.className = "fields";
+
+      addRow(fields, "责任者：", renderClickableValues(item.authors, gotoSearch));
+      addRow(fields, "主题词：", renderClickableValues(item.keywords, gotoSearch));
+      addRow(fields, "出版日期：", item.publish_date || item.publish_year || "未知");
+      addRow(fields, "出版者：", item.publisher || "未知");
+      addRow(fields, "ISBN：", item.isbn || "未知");
+      addRow(fields, "语种：", item.language || "未知");
+      addRow(fields, "页数：", item.page_count != null ? String(item.page_count) : "未知");
+      addRow(fields, "中图分类：", item.cnl_class_no || "未知");
+
+      info.appendChild(cover);
+      info.appendChild(fields);
+      content.appendChild(info);
+
+      const abs = document.createElement("div");
+      abs.className = "abstract";
+      const absTitle = document.createElement("div");
+      absTitle.className = "abstract-title";
+      absTitle.textContent = "摘要";
+      const absBody = document.createElement("div");
+      absBody.className = "abstract-body";
+      absBody.textContent = item.abstract || "";
+      abs.appendChild(absTitle);
+      abs.appendChild(absBody);
+      content.appendChild(abs);
     }
+
+    document.getElementById("q").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") doSearch();
+    });
 
     loadDetail();
   </script>
