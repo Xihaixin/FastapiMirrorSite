@@ -56,6 +56,11 @@ uv run python -m app.seed_data --count 800
 
 ```
 
+### 学习资源
+
+[阮一峰教程 ORM ](https://www.ruanyifeng.com/blog/2019/02/orm-tutorial.html)
+
+
 ### 4. 停止服务
 
 在运行 `uvicorn` 的终端中按 `Ctrl + C` 即可停止服务。
