@@ -48,6 +48,14 @@ uvicorn app.main:app --reload
 - 交互式 API 文档：`http://127.0.0.1:8000/docs`
 - 静态前端页面：`http://127.0.0.1:8000/static/index.html`
 
+
+### 生成虚拟数据
+
+```bash
+uv run python -m app.seed_data --count 800
+
+```
+
 ### 4. 停止服务
 
 在运行 `uvicorn` 的终端中按 `Ctrl + C` 即可停止服务。
