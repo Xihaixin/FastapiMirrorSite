@@ -1,5 +1,6 @@
 import argparse
 import random
+from collections import Counter
 from typing import Dict, Optional
 
 from sqlalchemy.orm import Session
@@ -7,19 +8,142 @@ from sqlalchemy.orm import Session
 from . import models
 from .database import Base, SessionLocal, engine
 
-LEAF_CLASS_CODES = [
-    "B01",
-    "B83",
-    "G252.7",
-    "I106",
-    "I712",
-    "O13",
-    "O151",
-    "TP18",
-    "TP181",
-    "TP181.1",
-    "TP391",
+# code, name, parent_code, level
+CLASS_DEFS = [
+    ("B", "哲学、宗教", None, 1),
+    ("B0", "哲学理论", "B", 2),
+    ("B5", "欧洲哲学", "B", 2),
+    ("B81", "逻辑学（论理学）", "B", 2),
+    ("B82", "伦理学（道德哲学）", "B", 2),
+    ("B83", "美学", "B", 2),
+    ("B84", "心理学", "B", 2),
+    ("B9", "宗教", "B", 2),
+    ("B99", "其它", "B", 2),
+    ("C", "社会科学总论", None, 1),
+    ("D", "政治、法律", None, 1),
+    ("E", "军事", None, 1),
+    ("F", "经济", None, 1),
+    ("G", "文化、科学、教育、体育", None, 1),
+    ("H", "语言、文字", None, 1),
+    ("I", "文学", None, 1),
+    ("J", "艺术", None, 1),
+    ("K", "历史、地理", None, 1),
+    ("N", "自然科学总论", None, 1),
+    ("O", "数理科学和化学", None, 1),
+    ("P", "天文学、地球科学", None, 1),
+    ("Q", "生物科学", None, 1),
+    ("R", "医药、卫生", None, 1),
+    ("S", "农业科学", None, 1),
+    ("T", "工业技术", None, 1),
+    ("U", "交通运输", None, 1),
+    ("V", "航空、航天", None, 1),
+    ("X", "环境科学、安全科学", None, 1),
+    ("Z", "综合性图书", None, 1),
 ]
+
+# 类目分布权重，模拟真实站点“部分类目明显更大”
+GEN_CLASS_WEIGHTS = {
+    "B0": 5,
+    "B5": 2,
+    "B81": 1,
+    "B82": 2,
+    "B83": 2,
+    "B84": 4,
+    "B9": 3,
+    "B99": 2,
+    "C": 6,
+    "D": 7,
+    "E": 1,
+    "F": 12,
+    "G": 5,
+    "H": 3,
+    "I": 4,
+    "J": 3,
+    "K": 4,
+    "N": 2,
+    "O": 11,
+    "P": 13,
+    "Q": 4,
+    "R": 16,
+    "S": 2,
+    "T": 8,
+    "U": 1,
+    "V": 1,
+    "X": 3,
+    "Z": 3,
+}
+
+GEN_CLASS_CODES = list(GEN_CLASS_WEIGHTS.keys())
+
+SUBJECTS = [
+    "machine learning",
+    "economic policy",
+    "applied statistics",
+    "digital humanities",
+    "political philosophy",
+    "medical informatics",
+    "environmental science",
+    "world history",
+    "advanced chemistry",
+    "education technology",
+    "public administration",
+    "transportation systems",
+    "aerospace engineering",
+    "religion and society",
+    "modern psychology",
+]
+
+NOUNS = [
+    "methods",
+    "foundations",
+    "applications",
+    "practice",
+    "analysis",
+    "perspectives",
+    "workbook",
+    "handbook",
+    "essentials",
+    "approaches",
+]
+
+FIRST_NAMES = [
+    "Alice",
+    "Bob",
+    "Carol",
+    "David",
+    "Emily",
+    "Frank",
+    "Grace",
+    "Helen",
+    "Ian",
+    "Julia",
+    "Kevin",
+    "Liam",
+]
+
+LAST_NAMES = [
+    "Smith",
+    "Johnson",
+    "Brown",
+    "Miller",
+    "Davis",
+    "Wilson",
+    "Moore",
+    "Taylor",
+    "Anderson",
+    "Thomas",
+    "Jackson",
+]
+
+PUBLISHERS = [
+    "Global Academic Press",
+    "Northbridge Publishing",
+    "Open Study Books",
+    "Scholar House",
+    "Campus Research Lab",
+]
+
+LANGUAGES = ["en", "en", "en", "en", "zh-CN", "fr", "de", None]
 
 
 def _get_or_create_class(
@@ -53,32 +177,8 @@ def ensure_class_tree(db: Session) -> Dict[str, models.CnlClass]:
     for row in db.query(models.CnlClass).all():
         class_cache[row.code] = row
 
-    _get_or_create_class(db, class_cache, "B", "哲学、宗教", None, 1)
-    _get_or_create_class(db, class_cache, "B0", "哲学理论", "B", 2)
-    _get_or_create_class(db, class_cache, "B01", "哲学基本问题", "B0", 3)
-    _get_or_create_class(db, class_cache, "B83", "美学", "B", 2)
-
-    _get_or_create_class(db, class_cache, "G", "文化、科学、教育、体育", None, 1)
-    _get_or_create_class(db, class_cache, "G25", "图书馆学、情报学", "G", 2)
-    _get_or_create_class(db, class_cache, "G252", "情报学", "G25", 3)
-    _get_or_create_class(db, class_cache, "G252.7", "信息检索", "G252", 4)
-
-    _get_or_create_class(db, class_cache, "I", "文学", None, 1)
-    _get_or_create_class(db, class_cache, "I1", "世界文学", "I", 2)
-    _get_or_create_class(db, class_cache, "I106", "文学理论与批评", "I1", 3)
-    _get_or_create_class(db, class_cache, "I712", "美国文学", "I1", 3)
-
-    _get_or_create_class(db, class_cache, "O", "数理科学和化学", None, 1)
-    _get_or_create_class(db, class_cache, "O1", "数学", "O", 2)
-    _get_or_create_class(db, class_cache, "O13", "高等数学", "O1", 3)
-    _get_or_create_class(db, class_cache, "O151", "概率论与数理统计", "O1", 3)
-
-    _get_or_create_class(db, class_cache, "T", "工业技术", None, 1)
-    _get_or_create_class(db, class_cache, "TP", "自动化技术、计算机技术", "T", 2)
-    _get_or_create_class(db, class_cache, "TP18", "人工智能技术", "TP", 3)
-    _get_or_create_class(db, class_cache, "TP181", "自动化基础理论", "TP18", 4)
-    _get_or_create_class(db, class_cache, "TP181.1", "机器学习", "TP181", 5)
-    _get_or_create_class(db, class_cache, "TP391", "计算机图形学", "TP", 3)
+    for code, name, parent_code, level in CLASS_DEFS:
+        _get_or_create_class(db, class_cache, code, name, parent_code, level)
 
     db.flush()
     return class_cache
@@ -120,113 +220,89 @@ def _ensure_resource_class_mappings(
             )
 
 
-def _build_resource_row(index: int, rng: random.Random) -> dict:
-    subject_pool = [
-        "machine learning",
-        "digital library",
-        "information retrieval",
-        "world literature",
-        "probability",
-        "computer graphics",
-        "philosophy",
-        "data mining",
-        "ethics",
-        "education technology",
-    ]
-    noun_pool = [
-        "methods",
-        "foundations",
-        "applications",
-        "practice",
-        "analysis",
-        "perspectives",
-        "workbook",
-        "handbook",
-        "essentials",
-        "approaches",
-    ]
-    first_names = [
-        "Alice",
-        "Bob",
-        "Carol",
-        "David",
-        "Emily",
-        "Frank",
-        "Grace",
-        "Helen",
-        "Ian",
-        "Julia",
-        "Kevin",
-        "Liam",
-    ]
-    last_names = [
-        "Smith",
-        "Johnson",
-        "Brown",
-        "Miller",
-        "Davis",
-        "Wilson",
-        "Moore",
-        "Taylor",
-        "Anderson",
-        "Thomas",
-        "Jackson",
-    ]
-    publishers = [
-        "Global Academic Press",
-        "Northbridge Publishing",
-        "Open Study Books",
-        "Scholar House",
-        "Campus Research Lab",
-    ]
-    languages = ["en", "en", "en", "en", "zh-CN", "fr", "de", None]
+def _weighted_class_code(rng: random.Random) -> str:
+    total = sum(GEN_CLASS_WEIGHTS.values())
+    pick = rng.randint(1, total)
+    acc = 0
+    for code, w in GEN_CLASS_WEIGHTS.items():
+        acc += w
+        if pick <= acc:
+            return code
+    return "F"
 
-    subject = rng.choice(subject_pool)
-    noun = rng.choice(noun_pool)
-    title = f"{subject.title()} {noun.title()} Vol.{index}"
-    author1 = f"{rng.choice(first_names)} {rng.choice(last_names)}"
-    author2 = f"{rng.choice(first_names)} {rng.choice(last_names)}"
+
+def _build_resource_row(seq: int, rng: random.Random, class_code: str) -> dict:
+    subject = rng.choice(SUBJECTS)
+    noun = rng.choice(NOUNS)
+    title = f"{subject.title()} {noun.title()} Vol.{seq}"
+    author1 = f"{rng.choice(FIRST_NAMES)} {rng.choice(LAST_NAMES)}"
+    author2 = f"{rng.choice(FIRST_NAMES)} {rng.choice(LAST_NAMES)}"
     year = rng.randint(2010, 2025)
-    lang = rng.choice(languages)
-    class_code = rng.choice(LEAF_CLASS_CODES)
-    isbn = str(9790000000000 + index)
-    keywords = f"{subject}; {noun}; academic; reference"
+    isbn = str(9790000000000 + seq)
 
     return {
         "title": title,
         "authors": f"{author1}; {author2}",
-        "keywords": keywords,
+        "keywords": f"{subject}; {noun}; academic; reference",
         "publish_year": year,
-        "publisher": rng.choice(publishers),
+        "publisher": rng.choice(PUBLISHERS),
         "isbn": isbn,
-        "language": lang,
+        "language": rng.choice(LANGUAGES),
         "page_count": rng.randint(120, 980),
         "cnl_class_no": class_code,
         "abstract": f"This volume discusses {subject} with {noun} in higher education and research contexts.",
     }
 
 
-def seed_resources(db: Session, target_count: int = 500, seed: int = 20260302) -> int:
-    class_cache = ensure_class_tree(db)
-    current_count = db.query(models.Resource).count()
-    if current_count >= target_count:
-        _ensure_resource_class_mappings(db, class_cache)
-        db.commit()
-        return 0
-
-    rng = random.Random(seed)
-    existing_isbns = {x[0] for x in db.query(models.Resource.isbn).all()}
-    created = 0
-    index = 1
-    needed = target_count - current_count
-
-    while created < needed:
-        row = _build_resource_row(index, rng)
-        index += 1
+def _create_one_resource(
+    db: Session,
+    existing_isbns: set,
+    seq_start: int,
+    rng: random.Random,
+    forced_code: Optional[str] = None,
+) -> int:
+    seq = seq_start
+    while True:
+        code = forced_code or _weighted_class_code(rng)
+        row = _build_resource_row(seq, rng, code)
+        seq += 1
         if row["isbn"] in existing_isbns:
             continue
         existing_isbns.add(row["isbn"])
         db.add(models.Resource(**row))
+        return seq
+
+
+def seed_resources(
+    db: Session,
+    target_count: int = 500,
+    seed: int = 20260304,
+    min_per_class: int = 8,
+) -> int:
+    class_cache = ensure_class_tree(db)
+    rng = random.Random(seed)
+
+    existing_isbns = {x[0] for x in db.query(models.Resource.isbn).all()}
+    seq = 1
+    created = 0
+
+    # 先保证类目覆盖：每个类至少 min_per_class 条
+    class_counts = Counter(
+        code for (code,) in db.query(models.Resource.cnl_class_no).filter(models.Resource.cnl_class_no.isnot(None)).all()
+    )
+    for code in GEN_CLASS_CODES:
+        need = max(0, min_per_class - class_counts.get(code, 0))
+        for _ in range(need):
+            seq = _create_one_resource(db, existing_isbns, seq, rng, forced_code=code)
+            created += 1
+
+    db.flush()
+
+    # 再补齐到目标总量
+    current_count = db.query(models.Resource).count()
+    need_total = max(0, target_count - current_count)
+    for _ in range(need_total):
+        seq = _create_one_resource(db, existing_isbns, seq, rng, forced_code=None)
         created += 1
 
     db.flush()
@@ -247,6 +323,17 @@ def seed_all(target_count: int = 500) -> int:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Seed resources into local database.")
     parser.add_argument("--count", type=int, default=500, help="Target total resource count.")
+    parser.add_argument("--min-per-class", type=int, default=8, help="Ensure minimum records per class.")
     args = parser.parse_args()
-    created = seed_all(target_count=args.count)
-    print(f"Seed complete. Newly created: {created}")
+
+    Base.metadata.create_all(bind=engine)
+    db = SessionLocal()
+    try:
+        created = seed_resources(
+            db,
+            target_count=args.count,
+            min_per_class=args.min_per_class,
+        )
+        print(f"Seed complete. Newly created: {created}")
+    finally:
+        db.close()
