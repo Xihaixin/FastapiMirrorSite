@@ -11,5 +11,4 @@ wheels/
 db/
 first_batch_mirror/
 .env
-.env
 .vscode

@@ -10,7 +10,8 @@ from fastapi.responses import FileResponse
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
-from . import crud, models, schemas, seed_data
+from . import crud, models, schemas
+from . import seed_data_updated as seed_data
 from .database import Base, engine, get_db
 
 
