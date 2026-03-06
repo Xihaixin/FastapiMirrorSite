@@ -1,7 +1,7 @@
 from datetime import date
-from typing import List, Optional
+from typing import Annotated, List, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, conint
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ResourceBase(BaseModel):
@@ -14,7 +14,7 @@ class ResourceBase(BaseModel):
     # 出版日期（若仅存年份，用 publish_year）
     publish_date: Optional[date] = None
     # 出版年份
-    publish_year: Optional[conint(ge=0, le=2100)] = None
+    publish_year: Optional[Annotated[int, Field(ge=0, le=2100)]] = None
     # 出版者（不为空）
     publisher: str = Field(..., min_length=1, max_length=256)
     # ISBN 号（不为空，长度限制为 10~20，用于 ISBN10/13 及带连字符形式）
@@ -22,7 +22,7 @@ class ResourceBase(BaseModel):
     # 语种
     language: Optional[str] = Field(None, max_length=32)
     # 总页数（正整数）
-    page_count: Optional[conint(gt=0)] = None
+    page_count: Optional[Annotated[int, Field(gt=0)]] = None
     # 中图分类号
     cnl_class_no: Optional[str] = Field(None, max_length=64)
     # 摘要

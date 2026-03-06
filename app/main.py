@@ -10,7 +10,8 @@ from fastapi.responses import FileResponse
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
-from . import crud, models, schemas, seed_data
+from . import crud, models, schemas
+from . import seed_data_updated as seed_data
 from .database import Base, engine, get_db
 
 
@@ -95,6 +96,7 @@ async def ip_allowlist_middleware(request: Request, call_next):
             content={"detail": "IP not allowed", "client_ip": client_ip},
         )
     return await call_next(request)
+
 
 app.add_middleware(
     CORSMiddleware,

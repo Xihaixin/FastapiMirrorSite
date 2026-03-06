@@ -1,0 +1,394 @@
+html,
+body {
+    overflow-x: hidden;
+}
+
+body {
+    margin: 0;
+    background: #ececec;
+    color: #222;
+    font: 13px/1.42 "Microsoft YaHei", Arial, sans-serif;
+}
+
+a {
+    color: #1f5ea6;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+.page {
+    width: 1000px;
+    max-width: calc(100vw - 24px);
+    margin: 0 auto;
+    background: #fff;
+}
+
+.header {
+    height: 212px;
+    border-bottom: 1px solid #dcdcdc;
+    background: url(/static/top-new.jpg) no-repeat center/cover;
+}
+
+.search-area {
+    padding: 10px 0 12px;
+    background: #fff;
+}
+
+.search-con {
+    width: 580px;
+    max-width: calc(100% - 24px);
+    margin: 0 auto;
+    position: relative;
+    height: 45px;
+    border: 1px solid #dcdcdc;
+}
+
+.textbox {
+    width: calc(100% - 70px);
+    border: 0;
+    outline: none;
+    font-size: 16px;
+    height: 45px;
+    line-height: 45px;
+    padding: 0 10px;
+    box-sizing: border-box;
+}
+
+.search-btn {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 70px;
+    height: 45px;
+    border: 0;
+    background: #1f5ea6;
+    color: #fff;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.search-btn:hover {
+    background: #2a6ec2;
+}
+
+.home-box {
+    width: calc(100% - 24px);
+    margin: 0 auto 24px;
+    border: 1px solid #8ed0ea;
+    background: #fff;
+}
+
+.home-title {
+    padding: 6px 10px;
+    border-bottom: 1px solid #cdebf8;
+    background: #f4fbff;
+    color: #1a4d74;
+    font-weight: 700;
+}
+
+.home-list {
+    margin: 0;
+    padding: 8px 16px 12px 20px;
+    columns: 4;
+    column-gap: 20px;
+}
+
+.home-list li {
+    break-inside: avoid;
+    margin: 4px 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.home-empty {
+    padding: 10px;
+    color: #666;
+}
+
+.search-wrap {
+    width: calc(100% - 24px);
+    margin: 0 auto 24px;
+    display: none;
+    grid-template-columns: 220px 1fr 230px;
+    gap: 10px;
+}
+
+.panel {
+    border: 1px solid #c0c0c0;
+    background: #fff;
+}
+
+.panel-title {
+    padding: 4px 8px;
+    border-bottom: 1px solid #c7d7e9;
+    background: linear-gradient(to bottom, #eef5fc 0%, #d9e7f6 100%);
+    color: #33567b;
+    font-weight: 700;
+    font-size: 13px;
+}
+
+.summary {
+    padding: 8px 10px;
+    font-size: 12px;
+    border-bottom: 1px solid #e5e5e5;
+    background: #fafafa;
+    color: #333;
+}
+
+.filter-tip {
+    margin-left: 8px;
+    color: #0f4b92;
+}
+
+.resource {
+    border-bottom: 1px solid #eaeaea;
+    padding: 12px 10px;
+}
+
+.resource:hover {
+    background: #f7fbff;
+}
+
+.resource-row {
+    display: flex;
+    gap: 14px;
+}
+
+.cover-img {
+    width: 92px;
+    height: 124px;
+    object-fit: cover;
+    border: 1px solid #d6d6d6;
+    background: #fafafa;
+    flex: 0 0 auto;
+}
+
+.content {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.title-line {
+    font-size: 14px;
+    margin-bottom: 8px;
+    line-height: 1.4;
+}
+
+.index-no {
+    color: #777;
+    margin-right: 4px;
+}
+
+.title-link {
+    color: #1f5ea6;
+    font-weight: 700;
+}
+
+.meta {
+    color: #333;
+    font-size: 12px;
+    line-height: 1.7;
+}
+
+.label {
+    color: #666;
+    display: inline-block;
+    min-width: 62px;
+}
+
+.linklike {
+    color: #1f5ea6;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.hl {
+    color: #d40000;
+    font-weight: 700;
+}
+
+/* 左栏：模拟原站 mp_cc_* 树风格 */
+.cnl-tree-wrap {
+    border-top: none;
+    padding: 3px 0 0 6px;
+    height: 1033px;
+    overflow: auto;
+}
+
+.mp_cc_cNodec {
+    margin: 0;
+    line-height: 20px;
+    white-space: nowrap;
+}
+
+.mp_cc_cNodeTi {
+  display: inline-block;
+  min-height: 20px;
+  padding: 0 3px;
+  cursor: pointer;
+  border-radius: 1px;
+  color: #000;
+  font-size: 12px;
+}
+
+.mp_cc_cNodeTi:hover {
+    background: #e5f1ff;
+}
+
+.mp_cc_cNodeTi.active {
+    background: #bbddff;
+}
+
+.mp_cc_cNoden {
+    margin-left: 16px;
+    display: block;
+}
+
+.mp_cc_cNoden.collapsed {
+    display: none;
+}
+
+.mp-icon {
+    display: inline-block;
+    width: 14px;
+    text-align: center;
+    color: #4d4d4d;
+    font-size: 11px;
+}
+
+.right-panel-body {
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    min-height: 760px;
+}
+
+.right-pager {
+    border-right: 1px solid #e7e7e7;
+    padding: 6px 2px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    background: #fcfcfc;
+}
+
+.pager-btn {
+    width: 22px;
+    height: 22px;
+    line-height: 20px;
+    text-align: center;
+    border: 1px solid #cfdcec;
+    background: #f4f9ff;
+    color: #1f5ea6;
+    font-size: 12px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.pager-btn:hover {
+    background: #e9f3ff;
+}
+
+.pager-btn.active {
+    border-color: #7aa4d6;
+    background: #d9eaff;
+    color: #0f4b92;
+    font-weight: 700;
+}
+
+.pager-btn.disabled {
+    color: #9a9a9a;
+    background: #f7f7f7;
+    border-color: #e1e1e1;
+    cursor: default;
+}
+
+.right-box {
+    padding: 8px 10px;
+    max-height: 760px;
+    overflow: auto;
+}
+
+.agg-block {
+    margin-bottom: 12px;
+}
+
+.agg-title {
+    font-weight: 700;
+    color: #223f66;
+    margin-bottom: 6px;
+}
+
+.agg-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.agg-list li {
+    margin: 3px 0;
+    color: #333;
+}
+
+.agg-list .bullet {
+    color: #666;
+    margin-right: 4px;
+}
+
+.agg-link.active {
+    color: #d40000;
+    font-weight: 700;
+}
+
+@media (max-width: 1120px) {
+    .home-list {
+        columns: 2;
+    }
+
+    .search-wrap {
+        grid-template-columns: 220px 1fr;
+    }
+
+    .right-panel {
+        grid-column: 1 / span 2;
+    }
+}
+
+@media (max-width: 900px) {
+    .home-list {
+        columns: 1;
+    }
+
+    .search-wrap {
+        grid-template-columns: 1fr;
+    }
+
+    .right-panel {
+        grid-column: auto;
+    }
+
+    .cnl-tree-wrap {
+        height: 320px;
+    }
+
+    .right-panel-body {
+        grid-template-columns: 1fr;
+        min-height: auto;
+    }
+
+    .right-pager {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        border-right: 0;
+        border-bottom: 1px solid #e7e7e7;
+    }
+
+    .right-box {
+        max-height: 280px;
+    }
+}
