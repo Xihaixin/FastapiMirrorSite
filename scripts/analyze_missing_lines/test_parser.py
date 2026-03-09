@@ -3,7 +3,7 @@
 
 import sys
 sys.path.append('.')
-from scripts.parse_cnl_classification import CNLClassificationParser
+from scripts.parse_text_classification import CNLClassificationParser
 
 def main():
     parser = CNLClassificationParser("海纳中图分类.txt")
