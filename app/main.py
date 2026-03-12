@@ -8,6 +8,24 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.responses import JSONResponse
+import sys
+
+
+def _resource_path(*paths: str) -> str:
+    """Return the absolute path to a resource.
+
+    When the application is running in a PyInstaller bundle (``sys.frozen`` is
+    True), resources are extracted to ``sys._MEIPASS``.  Otherwise we resolve
+    relative to the current module directory.  This helper lets us refer to
+    ``frontend`` files without relying on the working directory.
+    """
+    if getattr(sys, "frozen", False):
+        base = sys._MEIPASS  # type: ignore[attr-defined]
+    else:
+        base = os.path.abspath(os.path.dirname(__file__))
+    return os.path.join(base, *paths)
+
+
 from sqlalchemy.orm import Session
 
 from . import crud, models, schemas
@@ -108,21 +126,15 @@ app.add_middleware(
 
 app.mount(
     "/static",
-    StaticFiles(directory="frontend"),
+    StaticFiles(directory=_resource_path("frontend")),
     name="frontend",
-)
-
-# 兼容迁移：临时挂载 first_batch_mirror 的静态资源，便于复用页面素材（图片/CSS 等）
-app.mount(
-    "/mirror",
-    StaticFiles(directory="first_batch_mirror/WebFile"),
-    name="mirror",
 )
 
 
 @app.get("/", include_in_schema=False)
 def read_index():
-    return FileResponse("frontend/index.html")
+    # use _resource_path to locate the index file inside the bundle
+    return FileResponse(_resource_path("frontend", "index.html"))
 
 
 @app.get("/resources/search", response_model=schemas.ResourceSearchOut)
