@@ -1,8 +1,12 @@
 import os
+import uvicorn
 import ipaddress
 from typing import List, Optional
 from contextlib import asynccontextmanager
 
+from pathlib import Path
+from sqlalchemy import text
+from sqlalchemy.exc import OperationalError
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -11,26 +15,38 @@ from fastapi.responses import JSONResponse
 import sys
 
 
-def _resource_path(*paths: str) -> str:
-    """Return the absolute path to a resource.
-
-    When the application is running in a PyInstaller bundle (``sys.frozen`` is
-    True), resources are extracted to ``sys._MEIPASS``.  Otherwise we resolve
-    relative to the current module directory.  This helper lets us refer to
-    ``frontend`` files without relying on the working directory.
+# ========== 修复后的路径函数（支持多参数/多级路径） ==========
+def _resource_path(*relative_parts) -> str:
     """
+    获取资源文件/目录的绝对路径，适配 PyInstaller 打包后的环境
+    :param relative_parts: 路径片段（可传多个，如 "frontend", "index.html"）
+    :return: 拼接后的绝对路径字符串
+    """
+    # 1. 确定基础路径（开发/打包环境）
     if getattr(sys, "frozen", False):
-        base = sys._MEIPASS  # type: ignore[attr-defined]
+        # 打包后：exe 所在目录（dist/main/）
+        base_path = Path(sys._MEIPASS).parent
     else:
-        base = os.path.abspath(os.path.dirname(__file__))
-    return os.path.join(base, *paths)
+        # 开发环境：项目根目录（frontend 与 app 同级）
+        base_path = Path(__file__).parent.parent  # 从 app/main.py 向上找根目录
+    
+    # 2. 拼接所有路径片段（支持多级，如 "frontend" + "index.html"）
+    # *relative_parts 接收多个参数，自动拼接成完整路径
+    full_path = base_path.joinpath(*relative_parts)
+    
+    # 3. 解析绝对路径并转为字符串（适配 FastAPI 接口要求）
+    resolved_path = full_path.resolve()
+    
+    # 可选：打印路径调试（开发/打包时排查问题）
+    print(f"📁 资源路径解析：{'/'.join(relative_parts)} → {resolved_path}")
+    
+    return str(resolved_path)
 
 
 from sqlalchemy.orm import Session
 
-from . import crud, models, schemas
-from . import seed_data_updated as seed_data
-from .database import Base, engine, get_db
+from app import crud, schemas
+from app.database import engine, get_db
 
 
 def _build_allowlist():
@@ -86,16 +102,39 @@ def _ip_allowed(ip: str) -> bool:
     return False
 
 
+# @asynccontextmanager
+# async def lifespan(app: FastAPI):
+#     Base.metadata.create_all(bind=engine)
+#     db = next(get_db())
+#     try:
+#         target_count = int(os.getenv("SEED_TARGET_COUNT", "500"))
+#         seed_data.seed_resources(db, target_count=target_count)
+#         yield
+#     finally:
+#         db.close()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    Base.metadata.create_all(bind=engine)
-    db = next(get_db())
+    print("✅ 应用启动中，开始初始化核心资源")
+    
     try:
-        target_count = int(os.getenv("SEED_TARGET_COUNT", "500"))
-        seed_data.seed_resources(db, target_count=target_count)
-        yield
-    finally:
-        db.close()
+        # 同步引擎不能用 async with！改用普通 with
+        with engine.connect() as conn:
+            result = conn.execute(text("SELECT 1"))  # 同步执行，无警告
+            row = result.scalar()
+            if row != 1:
+                raise RuntimeError("数据库连接测试失败")
+        print("✅ 数据库连接正常")
+    except OperationalError as e:
+        print(f"❌ 数据库连接失败：{e}")
+        raise e
+    
+    yield
+    
+    print("🔌 应用开始关闭，释放核心资源")
+    engine.dispose()  # 关闭同步引擎
+    print("🔌 所有资源已释放，应用正常关闭")
 
 
 app = FastAPI(
@@ -189,3 +228,26 @@ def read_resource(resource_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Resource not found")
     return resource
 
+# ========== 修复启动逻辑（关键！直接传 app 实例） ==========
+def main():
+    """打包后/开发时的统一启动入口"""
+    # 核心修改：不再用 "app.main:app" 字符串，直接传 app 实例
+    uvicorn_config = uvicorn.Config(
+        app=app,  # 直接传递 app 实例，绕开模块导入
+        host="0.0.0.0",
+        port=8000,
+        reload=False,  # 打包后必须关闭 reload
+        log_level="info",
+    )
+    server = uvicorn.Server(uvicorn_config)
+    print("🚀 FastAPI 服务启动中：http://127.0.0.1:8000")
+    server.run()
+
+# ========== 程序入口（确保打包后能执行） ==========
+if __name__ == "__main__":
+    # 修复 Python 路径，确保内部模块能导入
+    if getattr(sys, "frozen", False):
+        # 把打包后的资源目录加入 Python 路径
+        sys.path.insert(0, str(Path(sys._MEIPASS)))
+    # 启动服务
+    main()
