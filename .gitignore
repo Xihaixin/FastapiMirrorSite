@@ -12,3 +12,4 @@ db/
 first_batch_mirror/
 .env
 .vscode
+*.zip
