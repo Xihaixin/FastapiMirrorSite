@@ -3,7 +3,7 @@ from typing import Dict, List, Optional
 from sqlalchemy import Integer, func, or_
 from sqlalchemy.orm import Query, Session
 
-from . import models
+from app import models
 
 SEARCH_POINT_FIELDS = {
     "title": models.Resource.title,

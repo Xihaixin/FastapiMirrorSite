@@ -25,12 +25,29 @@ class CNLClassificationParser:
     """中图分类解析器"""
     
     def __init__(self, file_path: str = "海纳中图分类.txt"):
+        """
+        初始化中图分类器，维护一个“图书分类条目”列表和“图书分类代码”列表
+
+        参数：
+            file_path: str = "海纳中图分类.txt"
+
+        属性值：
+            file_path: str -> 待处理的中图分类标准
+            classifications: List[Classification] -> “图书分类条目”列表
+            code_to_class: Dict[str, Classification] -> “图书分类代码”列表
+            cannot_match_lines: List[str] -> “无法被正则表达式匹配到的行”
+
+        返回值：
+            “中图分类解析器”实例
+        
+        """
         self.file_path = file_path
         self.classifications: List[Classification] = []
         self.code_to_class: Dict[str, Classification] = {}
+        self.cannot_match_lines: List[str] = []
         
     def parse_line(self, line: str, line_no: int) -> Optional[Classification]:
-        """解析单行分类数据"""
+        """解析单行分类数据，返回一个 Classification （图书分类条目）数据对象的实例"""
         # 格式示例: "   1 : A = 马克思主义、列宁主义、毛泽东思想、邓小平理论"
         line = line.strip()
         if not line:
@@ -46,6 +63,7 @@ class CNLClassificationParser:
             match = re.match(pattern2, line)
             if not match:
                 print(f"警告: 第{line_no}行无法解析: {line[:50]}...")
+                self.cannot_match_lines.append(line)
                 return None
         
         line_num = int(match.group(1))
@@ -161,7 +179,7 @@ class CNLClassificationParser:
                 self.classifications.append(cls)
                 self.code_to_class[cls.code] = cls
         
-        print(f"解析完成，共找到 {len(self.classifications)} 个分类")
+        print(f"解析完成，共读取到{len(lines)} |> 找到 {len(self.classifications)} 个分类")
         
         # 推断层级关系
         self.infer_hierarchy()
@@ -296,10 +314,11 @@ def main():
     try:
         parser.parse_file()
         parser.print_statistics()
-        
+        cannot_match_lines_ls = "\n".join(parser.cannot_match_lines)
         # 生成CLASS_DEFS
         class_defs = parser.generate_class_defs()
         print(f"\n生成的CLASS_DEFS包含 {len(class_defs)} 个条目")
+        print(f"无法匹配的分类条目如下所示：\n{cannot_match_lines_ls}")
         
         # 生成权重分配
         weights = parser.generate_weight_distribution()
