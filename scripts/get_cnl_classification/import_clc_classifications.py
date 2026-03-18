@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 
 from app import models
 from app.database import SessionLocal, engine
-from scripts.parse_clc_json import CLCJsonParser
+from scripts.get_cnl_classification.parse_clc_json import CLCJsonParser
 
 
 def import_clc_classifications(db: Session, clear_existing: bool = True):

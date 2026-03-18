@@ -24,12 +24,12 @@ class Classification:
 class CNLClassificationParser:
     """中图分类解析器"""
     
-    def __init__(self, file_path: str = "海纳中图分类.txt"):
+    def __init__(self, file_path: str = "./scripts/海纳中图分类.txt"):
         """
         初始化中图分类器，维护一个“图书分类条目”列表和“图书分类代码”列表
 
         参数：
-            file_path: str = "海纳中图分类.txt"
+            file_path: str = "./scripts/海纳中图分类.txt"
 
         属性值：
             file_path: str -> 待处理的中图分类标准
@@ -53,7 +53,7 @@ class CNLClassificationParser:
         if not line:
             return None
             
-        # 使用正则表达式匹配格式
+        # 使用正则表达式匹配格式: \s 表示匹配空白字符的匹配
         pattern = r'^\s*(\d+)\s*:\s*([A-Z][A-Z0-9._\-]*)\s*=\s*(.+)$'
         match = re.match(pattern, line)
         
@@ -232,51 +232,7 @@ class CNLClassificationParser:
             sql_statements.append(sql)
         
         return sql_statements
-    
-    def generate_weight_distribution(self) -> Dict[str, int]:
-        """生成权重分配方案"""
-        weights = {}
-        
-        # 基于分类层级和学科重要性分配权重
-        for cls in self.classifications:
-            base_weight = 1
-            
-            # 根据层级调整权重（层级越深，权重越低）
-            if cls.level == 1:
-                base_weight = 10
-            elif cls.level == 2:
-                base_weight = 5
-            elif cls.level == 3:
-                base_weight = 3
-            elif cls.level == 4:
-                base_weight = 2
-            else:
-                base_weight = 1
-            
-            # 根据学科重要性调整权重
-            # 常用学科：计算机科学、经济、医学等
-            if cls.code.startswith(('TP', 'F', 'R')):
-                base_weight *= 2
-            # 基础学科：数学、物理、化学
-            elif cls.code.startswith(('O1', 'O4', 'O6')):
-                base_weight *= 1.5
-            # 人文社科
-            elif cls.code.startswith(('B', 'C', 'D', 'G', 'H', 'I', 'J', 'K')):
-                base_weight *= 1.2
-            
-            weights[cls.code] = int(base_weight)
-        
-        # 归一化，使总权重在合理范围内
-        total_weight = sum(weights.values())
-        target_total = 1000
-        
-        if total_weight > 0:
-            scale_factor = target_total / total_weight
-            for code in weights:
-                weights[code] = max(1, int(weights[code] * scale_factor))
-        
-        return weights
-    
+
     def print_statistics(self):
         """打印统计信息"""
         print("\n=== 分类统计信息 ===")
@@ -320,10 +276,6 @@ def main():
         print(f"\n生成的CLASS_DEFS包含 {len(class_defs)} 个条目")
         print(f"无法匹配的分类条目如下所示：\n{cannot_match_lines_ls}")
         
-        # 生成权重分配
-        weights = parser.generate_weight_distribution()
-        print(f"生成的权重分配包含 {len(weights)} 个条目")
-        print(f"总权重: {sum(weights.values())}")
         
         # 保存结果到文件
         with open("scripts/cnl_class_defs.py", "w", encoding="utf-8") as f:
@@ -335,12 +287,7 @@ def main():
                 parent_str = f"'{parent_code}'" if parent_code else "None"
                 f.write(f"    (\"{code}\", \"{name}\", {parent_str}, {level}),\n")
             f.write("]\n\n")
-            
-            f.write("GEN_CLASS_WEIGHTS = {\n")
-            for code, weight in sorted(weights.items(), key=lambda x: x[1], reverse=True)[:100]:  # 只保存前100个
-                f.write(f"    \"{code}\": {weight},\n")
-            f.write("}\n")
-        
+                   
         print("\n结果已保存到 scripts/cnl_class_defs.py")
         
         # 生成SQL文件
