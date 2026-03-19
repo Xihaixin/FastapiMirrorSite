@@ -11,6 +11,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from sqlalchemy.orm import Session
 from app.database import SessionLocal, engine, Base
 from app import models
+from sqlalchemy import func
 from app.seed_data_updated import seed_all
 
 
@@ -56,7 +57,7 @@ def update_database(target_resources: int = 1000):
         
         # 显示分类统计
         print("\n分类层级统计:")
-        from sqlalchemy import func
+        
         level_stats = (
             db.query(models.CnlClass.level, func.count(models.CnlClass.id))
             .group_by(models.CnlClass.level)
