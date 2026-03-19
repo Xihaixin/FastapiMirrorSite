@@ -6,6 +6,7 @@
 """
 
 import re
+import json
 from typing import List, Tuple, Dict, Optional
 from dataclasses import dataclass
 
@@ -24,7 +25,7 @@ class Classification:
 class CNLClassification:
     """中图分类解析器"""
     
-    def __init__(self, file_path: str = "./scripts/海纳中图分类.txt"):
+    def __init__(self, file_path: str = "./scripts/海纳中图分类.txt", output_path="./scripts/海纳中图分类筛选.json"):
         """
         初始化中图分类器，维护一个“图书分类条目”列表和“图书分类代码”列表
 
@@ -42,6 +43,9 @@ class CNLClassification:
         
         """
         self.file_path = file_path
+        self.first_letters = set()
+        self.output_path = output_path
+        self.data = {}
         self.classifications: List[Classification] = []
         self.code_to_class: Dict[str, Classification] = {}
         
@@ -73,7 +77,10 @@ class CNLClassification:
             code=code,
             name=name
         )
-        
+    def is_normal(self, code):
+        """判断分类号是否符合正常规则（1-2字母 + 0或多个数字）"""
+        return bool(re.fullmatch(r'^[A-Z]{1,2}\d*$', code))
+    
 
     def parse_file(self):
         """解析整个文件"""
@@ -87,20 +94,54 @@ class CNLClassification:
             if cls:
                 self.classifications.append(cls)
                 self.code_to_class[cls.code] = cls
+
+                if cls.code[0].isalpha():
+                    self.first_letters.add(cls.code[0])
         
-        print(f"解析完成，共读取到{len(lines)} |> 找到 {len(self.classifications)} 个分类")
+        # 为每个首字母初始化结构
+        for letter in sorted(self.first_letters, key=lambda x: ord(x)):
+            self.data[letter] = {
+                "name": "",
+                "normal": {},
+                "filter": {}
+            }
         
+        # 第二遍：分类处理
+        for code, classification in self.code_to_class.items():
+            first = code[0]
+            if first not in self.data:
+                continue
+
+            if re.fullmatch(r'^[A-Z]$',code):
+                self.data[first]["name"] = classification.name
+
+            if self.is_normal(code):
+                self.data[first]["normal"][code] = classification.name
+            else:
+                self.data[first]["filter"][code] = classification.name
+
+        self.save_to_json()
+        print(f"文件筛选完成，共读取到{len(lines)} |> 找到 {len(self.classifications)} 个分类 |> 文件已保存到{self.output_path}")
+    
+    def statistics_analysis(self):
+        pass
+
+
+    def save_to_json(self):
+        with open(self.output_path, 'w', encoding='utf-8') as f:
+            json.dump(self.data, f, ensure_ascii=False, indent=4)
         
+
     
 def main():
     """主函数"""
-    filter = CNLClassification("海纳中图分类.txt")
+    cnl_filter = CNLClassification()
     
     try:
-        filter.parse_file()
+        cnl_filter.parse_file()
             
     except FileNotFoundError:
-        print(f"错误: 文件 {filter.file_path} 不存在")
+        print(f"错误: 文件 {cnl_filter.file_path} 不存在")
         print("请确保文件在当前目录下")
     except Exception as e:
         print(f"解析过程中发生错误: {e}")
@@ -110,76 +151,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-    # ---------------------------------------------------------------------------
-    import re
-
-    import json
-
-    def parse_line(line):
-        """解析单行，返回 (分类号, 名称) 或 (None, None)"""
-        pattern = r'^\s*\d+\s*:\s*(\S+)\s*=\s*(.+)$'
-        match = re.match(pattern, line)
-        if match:
-            code = match.group(1).strip()
-            name = match.group(2).strip()
-            return code, name
-        return None, None
-
-    def is_normal(code):
-        """判断分类号是否符合正常规则（1-2字母 + 0或多个数字）"""
-        return bool(re.fullmatch(r'^[A-Z]{1,2}\d*$', code))
-
-    def process_file(file_path):
-        data = {}
-        entries = []          # 保存所有 (code, name)
-        first_letters = set() # 收集出现的首字母
-
-        # 第一遍：收集所有条目和首字母
-        with open(file_path, 'r', encoding='utf-8') as f:
-            for line in f:
-                line = line.strip()
-                if not line:
-                    continue
-                code, name = parse_line(line)
-                if code:
-                    entries.append((code, name))
-                    if code and code[0].isalpha():
-                        first_letters.add(code[0])
-
-        # 为每个首字母初始化结构
-        for letter in first_letters:
-            data[letter] = {
-                "name": "",
-                "normal": {},
-                "filter": {}
-            }
-
-        # 第二遍：分类处理
-        for code, name in entries:
-            first = code[0]
-            if first not in data:
-                continue  # 安全保护，理论上不会发生
-
-            # 如果是纯单字母，设置为该大类的名称
-            if re.fullmatch(r'^[A-Z]$', code):
-                data[first]["name"] = name
-
-            # 根据规则放入 normal 或 filter
-            if is_normal(code):
-                data[first]["normal"][code] = name
-            else:
-                data[first]["filter"][code] = name
-
-        return data
-
-    def save_json(data, output_path):
-        with open(output_path, 'w', encoding='utf-8') as f:
-            json.dump(data, f, ensure_ascii=False, indent=4)
-
-    if __name__ == "__main__":
-        input_file = "你的文件.txt"   # 替换为实际路径
-        output_file = "output.json"
-        result = process_file(input_file)
-        save_json(result, output_file)
-        print(f"处理完成，结果已保存至 {output_file}")
