@@ -72,10 +72,67 @@
 
     .hl { color: #d40000; font-weight: 700; }
 
+    /* PDF 操作栏 */
+    .pdf-actions {
+      background: #f9f9f9;
+      border-top: 1px solid #dcdcdc;
+      border-bottom: 1px solid #dcdcdc;
+      padding: 12px 12px;
+      margin: 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      font-size: 13px;
+    }
+    .pdf-actions .label {
+      color: #666;
+      font-weight: bold;
+      margin-right: 8px;
+    }
+    .pdf-actions .btn {
+      display: inline-block;
+      padding: 6px 12px;
+      background: #152a8c;
+      color: white;
+      border-radius: 4px;
+      text-decoration: none;
+      cursor: pointer;
+      border: none;
+      font-size: 12px;
+    }
+    .pdf-actions .btn:hover {
+      background: #1f39ae;
+    }
+    .pdf-actions .btn.secondary {
+      background: #6c757d;
+    }
+    .pdf-actions .btn.secondary:hover {
+      background: #5a6268;
+    }
+    .pdf-actions .btn.outline {
+      background: transparent;
+      color: #152a8c;
+      border: 1px solid #152a8c;
+    }
+    .pdf-actions .btn.outline:hover {
+      background: #152a8c;
+      color: white;
+    }
+    .pdf-actions .divider {
+      color: #ccc;
+      margin: 0 4px;
+    }
+
     @media (max-width: 767px) {
       .header{ height: 170px; }
       .info-panel { flex-direction: column; }
       .cover-img { width: 98px; height: 134px; }
+      .pdf-actions {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
     }
   </style>
 </head>
@@ -256,6 +313,57 @@
       info.appendChild(cover);
       info.appendChild(fields);
       content.appendChild(info);
+
+      // PDF 操作栏
+      const pdfActions = document.createElement("div");
+      pdfActions.className = "pdf-actions";
+      const label = document.createElement("span");
+      label.className = "label";
+      label.textContent = "PDF 操作：";
+      pdfActions.appendChild(label);
+
+      // 1. 在线阅读
+      const readBtn = document.createElement("a");
+      readBtn.className = "btn";
+      readBtn.href = `/pdfs/${id}.pdf`;
+      readBtn.target = "_blank";
+      readBtn.textContent = "在线阅读";
+      pdfActions.appendChild(readBtn);
+
+      // 2. 下载
+      const downloadBtn = document.createElement("a");
+      downloadBtn.className = "btn secondary";
+      downloadBtn.href = `/pdfs/${id}.pdf`;
+      downloadBtn.download = `resource_${id}.pdf`;
+      downloadBtn.textContent = "下载PDF";
+      pdfActions.appendChild(downloadBtn);
+
+      // 分隔符
+      const divider = document.createElement("span");
+      divider.className = "divider";
+      divider.textContent = "|";
+      pdfActions.appendChild(divider);
+
+      // 3. 阅读器推荐
+      const readerLabel = document.createElement("span");
+      readerLabel.textContent = "推荐阅读器：";
+      pdfActions.appendChild(readerLabel);
+
+      const reader1 = document.createElement("a");
+      reader1.className = "btn outline";
+      reader1.href = "/software/pdf.rar";
+      reader1.target = "_blank";
+      reader1.textContent = "PDF阅读器";
+      pdfActions.appendChild(reader1);
+
+      const reader2 = document.createElement("a");
+      reader2.className = "btn outline";
+      reader2.href = "/software/djvu.rar";
+      reader2.target = "_blank";
+      reader2.textContent = "DjVu阅读器";
+      pdfActions.appendChild(reader2);
+
+      content.appendChild(pdfActions);
 
       const abs = document.createElement("div");
       abs.className = "abstract";

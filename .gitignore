@@ -12,3 +12,5 @@ db/
 first_batch_mirror/
 .env
 .vscode
+pdfs/*.pdf
+!vscode.pdf
