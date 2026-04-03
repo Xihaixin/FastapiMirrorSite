@@ -169,6 +169,18 @@ app.mount(
     name="frontend",
 )
 
+app.mount(
+    "/pdfs",
+    StaticFiles(directory="pdfs"),
+    name="pdfs",
+)
+
+app.mount(
+    "/software",
+    StaticFiles(directory="software"),
+    name="software",
+)
+
 
 @app.get("/", include_in_schema=False)
 def read_index():

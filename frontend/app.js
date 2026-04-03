@@ -327,7 +327,7 @@ async function doSearch(page = 1, keepTreeState = false) {
     const cover = document.createElement("img");
     cover.className = "cover-img";
     cover.alt = "封面";
-    cover.src = "/mirror/index/2.jpg";
+    cover.src = "/static/public/nopic.jpg";
     cover.onerror = () => { cover.removeAttribute("src"); cover.style.background = "#fafafa"; };
 
     const content = document.createElement("div");
